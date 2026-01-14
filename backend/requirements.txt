@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+pymupdf
+python-docx
+# dodo-payments
+transformers
+torch
+python-multipart
+python-dotenv
+httpx

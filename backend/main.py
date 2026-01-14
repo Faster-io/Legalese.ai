@@ -1,0 +1,156 @@
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Request, Form
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from typing import List
+import uvicorn
+from database import engine, Base, get_db
+import models, extraction, ai
+import os 
+# from dodo_payments.webhook import Webhook
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load model on startup
+    ai.load_ai_model()
+    
+    # Create tables
+    Base.metadata.create_all(bind=engine)
+    
+    yield
+    # Clean up
+    print("Shutting down...")
+
+app = FastAPI(lifespan=lifespan)
+
+# Add CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+def read_root():
+    return {"Hello": "Legalese.ai Backend"}
+
+@app.post("/api/create-checkout-session")
+async def create_checkout_session(user_id: str = Form(...)): 
+    # Mock checkout creation using proper Dodo Payments API structure
+    # Real implementation would be:
+    # async with httpx.AsyncClient() as client:
+    #     resp = await client.post("https://api.dodopayments.com/v1/checkout", 
+    #         headers={"Authorization": f"Bearer {os.getenv('DODO_PAYMENTS_API_KEY')}"},
+    #         json={
+    #             "price_id": "price_xxx",
+    #             "customer_email": user_email,
+    #             "success_url": "http://localhost:3000/dashboard?success=true",
+    #             "cancel_url": "http://localhost:3000/subscribe?canceled=true"
+    #         })
+    #     return resp.json()
+    
+    # For MVP demonstration with success redirect:
+    return {
+        "checkout_url": f"https://test.dodopayments.com/buy/sub_12345?prefilled_email=test@example.com&success_url=http://localhost:3000/dashboard?success=true&cancel_url=http://localhost:3000/subscribe"
+    }
+
+@app.post("/api/analyze")
+async def analyze_document(
+    file: UploadFile = File(...), 
+    user_id: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    # 1. Read file
+    content = await file.read()
+    
+    # 2. Extract text
+    text = extraction.extract_text(file.filename, content)
+    if not text:
+        raise HTTPException(status_code=400, detail="Could not extract text or unsupported file format.")
+    
+    # 3. Check subscription limit
+    # Check if user exists, if not create
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+         # In real app, user creation happens via Clerk webhook, but for now lazy-create
+         user = models.User(id=user_id, email="user_from_clerk@example.com") 
+         db.add(user)
+         db.commit()
+    
+    if not user.is_premium:
+        doc_count = db.query(models.Document).filter(models.Document.user_id == user_id).count()
+        if doc_count >= 1:
+            raise HTTPException(status_code=402, detail="Free limit reached. Upgrade to Premium.")
+
+    # 4. Save Document
+    db_doc = models.Document(user_id=user_id, filename=file.filename, content=text)
+    db.add(db_doc)
+    db.commit()
+    db.refresh(db_doc)
+    
+    # 5. Analyze
+    analysis_results = ai.process_document(text)
+    
+    # 6. Save Clauses
+    for item in analysis_results:
+        clause = models.Clause(
+            document_id=db_doc.id,
+            text=item['text'],
+            risk_level=item['risk'],
+            explanation=item['explanation']
+        )
+        db.add(clause)
+    
+    db.commit()
+    
+    return {
+        "document_id": db_doc.id,
+        "filename": db_doc.filename,
+        "results": analysis_results
+    }
+
+@app.get("/api/documents")
+def get_documents(user_id: str, db: Session = Depends(get_db)):
+    # In a real app, user_id would be extracted from the auth token (Clerk)
+    # Here we might need to pass it as a query param or header for MVP if not fully validating tokens yet.
+    docs = db.query(models.Document).filter(models.Document.user_id == user_id).all()
+    return docs
+
+@app.get("/api/documents/{doc_id}")
+def get_document(doc_id: int, db: Session = Depends(get_db)):
+    doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # helper to format clauses
+    results = []
+    for c in doc.clauses:
+        results.append({
+            "text": c.text,
+            "risk": c.risk_level,
+            "explanation": c.explanation
+        })
+        
+    return {
+        "document_id": doc.id,
+        "filename": doc.filename,
+        "content" : doc.content,
+        "results": results
+    }
+
+@app.post("/api/webhooks/dodo")
+async def dodo_webhook(request: Request, db: Session = Depends(get_db)):
+    payload = await request.body()
+    headers = request.headers
+    # Verify signature logic here using Dodo SDK
+    # webhook_id = headers.get("webhook-id")
+    # if not Webhook.verify(payload, headers, os.getenv("DODO_PAYMENTS_WEBHOOK_KEY")):
+    #    raise HTTPException(status_code=400, detail="Invalid signature")
+    
+    # Handle event (e.g. subscription.created -> set is_premium=True)
+    return {"status": "received"}
+
+if __name__ == "__main__":
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
