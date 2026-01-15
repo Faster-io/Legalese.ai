@@ -12,10 +12,7 @@ export const metadata: Metadata = {
   description: "Analyze legal contracts for risk using advanced AI.",
 };
 
-import { Providers } from "./providers";
-import DevToolbar from "@/components/DevToolbar";
 
-// ... (imports)
 
 export default function RootLayout({
   children,
@@ -26,14 +23,11 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body className={`${inter.className} min-h-screen bg-[var(--background)] flex flex-col`}>
-          <Providers>
-            <Navbar />
-            <main className="pt-16 flex-grow">
-              {children}
-            </main>
-            <Footer />
-            <DevToolbar />
-          </Providers>
+          <Navbar />
+          <main className="pt-16 flex-grow">
+            {children}
+          </main>
+          <Footer />
         </body>
       </html>
     </ClerkProvider>
