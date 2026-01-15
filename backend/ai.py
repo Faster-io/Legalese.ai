@@ -1,5 +1,12 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-import torch
+# Conditional imports for AI/ML packages (not available in production)
+try:
+    from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+    import torch
+    AI_PACKAGES_AVAILABLE = True
+except ImportError:
+    AI_PACKAGES_AVAILABLE = False
+    print("AI packages (transformers, torch) not available. Using heuristics only.")
+
 import re
 import os
 
@@ -18,6 +25,12 @@ def load_ai_model():
     # Skip model loading in production if environment variable is set
     if os.getenv("SKIP_AI_MODEL_LOADING", "false").lower() == "true":
         print("Skipping AI model loading (using heuristics only)")
+        model_loaded = False
+        return
+    
+    # Skip if AI packages are not available
+    if not AI_PACKAGES_AVAILABLE:
+        print("AI packages not installed. Using heuristics only.")
         model_loaded = False
         return
     

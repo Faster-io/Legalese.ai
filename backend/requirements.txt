@@ -1,7 +1,6 @@
 # Core Framework
 fastapi
 uvicorn[standard]
-gunicorn
 
 # Database
 sqlalchemy
@@ -11,9 +10,11 @@ psycopg2-binary
 pymupdf
 python-docx
 
-# AI/ML
-transformers
-torch
+# AI/ML - Commented out for production deployment (too large for Vercel free tier)
+# These are only needed for local development if you want to use the AI model
+# In production, we use heuristic-based analysis (see ai.py)
+# transformers
+# torch
 
 # Utilities
 python-multipart
