@@ -9,19 +9,6 @@ export default function HomePage() {
     const { isSignedIn, isLoaded } = useAuth();
     const { openSignIn } = useClerk();
 
-    // Auto-redirect removed to allow users to view the landing page
-    // Users can click "Get Started" to go to dashboard
-    /*
-    useEffect(() => {
-        if (isLoaded) {
-            // If user is signed in, redirect to dashboard
-            if (isSignedIn) {
-                router.push('/dashboard');
-            }
-        }
-    }, [isSignedIn, isLoaded, router]);
-    */
-
     const handleGetStarted = () => {
         if (isSignedIn) {
             router.push('/dashboard');
@@ -133,12 +120,13 @@ export default function HomePage() {
                 <div className="mt-20 text-center">
                     <h2 className="text-3xl font-bold text-white mb-6">Simple Pricing</h2>
                     <div className="inline-block bg-slate-800/50 backdrop-blur-sm p-8 rounded-xl border border-slate-700">
-                        <div className="text-slate-400 mb-2">Free: 1 document</div>
+                        <div className="text-slate-400 mb-2">Free: 3 documents</div>
                         <div className="text-4xl font-bold text-white mb-2">$15<span className="text-lg text-slate-400">/month</span></div>
                         <div className="text-slate-400">Unlimited documents</div>
                     </div>
                 </div>
             </div>
         </div>
+
     );
 }
