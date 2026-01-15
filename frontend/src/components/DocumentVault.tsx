@@ -92,7 +92,7 @@ const DocumentVault = () => {
             router.push(`/analysis/${data.document_id}`);
         } catch (error) {
             console.error(error);
-            alert("Upload failed. Ensure backend is running.");
+            alert(`Upload failed. Ensure backend is running at ${API_ENDPOINTS.analyze}`);
         } finally {
             setIsUploading(false);
         }

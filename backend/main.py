@@ -39,8 +39,8 @@ app = FastAPI(lifespan=lifespan)
 # For debugging: Allow all origins temporarily
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for now
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=False, # Must be False for wildcard origins
     allow_methods=["*"],
     allow_headers=["*"],
 )
