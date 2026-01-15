@@ -1,12 +1,14 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Request, Form
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Request, Form, Body
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 import uvicorn
 from database import engine, Base, get_db
-import models, extraction, ai
+import models, extraction, ai, report_generator
 import os 
+from pydantic import BaseModel 
 # from dodo_payments.webhook import Webhook
 
 @asynccontextmanager
@@ -183,6 +185,41 @@ def get_user_status(user_id: str, db: Session = Depends(get_db)):
         "limit": 3 if not user.is_premium else -1 # Updated limit to 3
     }
 
+class RewriteRequest(BaseModel):
+    text: str
+
+@app.post("/api/negotiate")
+async def negotiate_clause(request: RewriteRequest):
+    rewritten = await ai.rewrite_clause(request.text)
+    return {"rewritten_text": rewritten}
+
+@app.get("/api/export/{doc_id}")
+def export_report(doc_id: int, db: Session = Depends(get_db)):
+    doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Prepare data
+    results = []
+    for c in doc.clauses:
+        results.append({
+            "text": c.text,
+            "risk": c.risk_level,
+            "explanation": c.explanation
+        })
+    
+    doc_data = {
+        "filename": doc.filename,
+        "results": results
+    }
+    
+    pdf_buffer = report_generator.generate_pdf_report(doc_data)
+    
+    return StreamingResponse(
+        pdf_buffer, 
+        media_type="application/pdf", 
+        headers={"Content-Disposition": f"attachment; filename=Risk_Report_{doc.filename}.pdf"}
+    )
 
 if __name__ == "__main__":
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

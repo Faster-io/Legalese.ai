@@ -23,3 +23,6 @@ httpx
 
 # Payment Processing
 # dodo-payments
+
+# PDF Generation
+reportlab
