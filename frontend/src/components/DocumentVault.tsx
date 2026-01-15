@@ -81,7 +81,14 @@ const DocumentVault = () => {
                     // If response is not JSON (e.g. 500 HTML from Vercel)
                     console.error("Non-JSON response received");
                     if (res.status === 500) {
-                        errDetail = "Server Error (500). If on Vercel, check if DATABASE_URL is set in backend settings.";
+                        const errorMsg = String(errDetail || "");
+                        if (errorMsg.includes("password authentication failed")) {
+                            errDetail = "Database Password Incorrect. Update DATABASE_URL in Vercel Settings.";
+                        } else if (errorMsg.includes("DATABASE_URL not set")) {
+                            errDetail = "Database Not Configured. Set DATABASE_URL in Vercel.";
+                        } else {
+                            errDetail = `Server Error (500): ${errorMsg}`;
+                        }
                     } else {
                         errDetail = `Request failed with status ${res.status}`;
                     }
