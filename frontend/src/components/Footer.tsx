@@ -8,9 +8,11 @@ export default function Footer() {
             <div className="container mx-auto px-4">
                 <div className="grid md:grid-cols-4 gap-8 mb-8">
                     <div className="col-span-1 md:col-span-2">
-                        <h3 className="text-xl font-bold text-white mb-4">
-                            Legalese<span className="text-blue-500">.ai</span>
-                        </h3>
+                        <Link href="/" className="inline-block">
+                            <h3 className="text-xl font-bold text-white mb-4 hover:opacity-80 transition-opacity">
+                                Legalese<span className="text-blue-500">.ai</span>
+                            </h3>
+                        </Link>
                         <p className="text-slate-400 max-w-sm mb-4">
                             AI-powered contract analysis ensuring you never sign a bad deal again.
                             Fast, secure, and accurate legal risk assessment.

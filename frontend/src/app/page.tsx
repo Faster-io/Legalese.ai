@@ -9,6 +9,9 @@ export default function HomePage() {
     const { isSignedIn, isLoaded } = useAuth();
     const { openSignIn } = useClerk();
 
+    // Auto-redirect removed to allow users to view the landing page
+    // Users can click "Get Started" to go to dashboard
+    /*
     useEffect(() => {
         if (isLoaded) {
             // If user is signed in, redirect to dashboard
@@ -17,6 +20,7 @@ export default function HomePage() {
             }
         }
     }, [isSignedIn, isLoaded, router]);
+    */
 
     const handleGetStarted = () => {
         if (isSignedIn) {
