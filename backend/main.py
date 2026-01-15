@@ -62,13 +62,10 @@ async def create_checkout_session(user_id: str = Form(...)):
     # Mock checkout creation using proper Dodo Payments API structure if SDK is missing
     # or just return a mock URL for this demo.
     
-    # Real implementation would be:
-    # async with httpx.AsyncClient() as client:
-    #     resp = await client.post("https://api.dodopayments.com/v1/checkout", headers={...}, json={...})
-    #     return resp.json()
-    
-    # For MVP demonstration:
-    return {"checkout_url": "https://test.dodopayments.com/buy/sub_12345?prefilled_email=test@example.com"}
+    # Real implementation would be calls to Dodo API
+    # For MVP demonstration, we redirect to the payment link
+    # In a real app, you might want to pass user_id as metadata to Dodo so you can link the webhook back
+    return {"checkout_url": "https://checkout.dodopayments.com/buy/pdt_0NWHk0ALtx4aENNGHWVUR?quantity=1"}
 
 @app.post("/api/analyze")
 async def analyze_document(
