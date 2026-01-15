@@ -1,7 +1,7 @@
 // API Configuration
 // This file centralizes all API endpoint URLs
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 export const API_ENDPOINTS = {
     analyze: `${API_BASE_URL}/api/analyze`,
