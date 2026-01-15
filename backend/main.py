@@ -92,7 +92,7 @@ async def analyze_document(
     
     if not user.is_premium:
         doc_count = db.query(models.Document).filter(models.Document.user_id == user_id).count()
-        if doc_count >= 1:
+        if doc_count >= 3: # Updated limit to 3
             raise HTTPException(status_code=402, detail="Free limit reached. Upgrade to Premium.")
 
     # 4. Save Document
@@ -172,7 +172,7 @@ def get_user_status(user_id: str, db: Session = Depends(get_db)):
         return {
             "is_premium": False,
             "document_count": 0,
-            "limit": 1
+            "limit": 3 # Updated limit to 3
         }
     
     doc_count = db.query(models.Document).filter(models.Document.user_id == user_id).count()
@@ -180,7 +180,7 @@ def get_user_status(user_id: str, db: Session = Depends(get_db)):
     return {
         "is_premium": user.is_premium,
         "document_count": doc_count,
-        "limit": 1 if not user.is_premium else -1 # -1 means unlimited
+        "limit": 3 if not user.is_premium else -1 # Updated limit to 3
     }
 
 

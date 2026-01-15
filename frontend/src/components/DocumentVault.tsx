@@ -100,11 +100,22 @@ const DocumentVault = () => {
     return (
         <div className="bg-slate-900 min-h-screen p-8">
             <div className="max-w-5xl mx-auto">
-                {/* Header Section */}
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">Document Vault</h1>
-                        <p className="text-slate-400 mt-1">Manage and analyze your legal contracts</p>
+                        <div className="flex items-center gap-4 mb-1">
+                            <h1 className="text-3xl font-bold text-white tracking-tight">Document Vault</h1>
+                            <button
+                                onClick={() => router.push('/')}
+                                className="text-xs text-slate-500 hover:text-blue-400 transition-colors border border-slate-700 rounded px-2 py-1"
+                            >
+                                ← Return to Home
+                            </button>
+                        </div>
+                        <p className="text-slate-400 mt-1">
+                            {status && !status.is_premium
+                                ? "Your first 3 scans are on us! Analyze contracts instantly."
+                                : "Manage and analyze your legal contracts"}
+                        </p>
                     </div>
 
                     {/* Usage Stats & Actions */}
