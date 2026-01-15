@@ -255,7 +255,7 @@ export default function HomePage() {
                     {/* Feature 1: AI Negotiation Assistant */}
                     <div
                         onClick={() => setActiveFeature('rewrite')}
-                        className="group relative bg-slate-800/50 backdrop-blur-sm rounded-3xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 overflow-hidden cursor-pointer"
+                        className="group relative bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-white/10 ring-1 ring-white/5 shadow-2xl hover:shadow-blue-500/20 hover:border-blue-500/50 transition-all duration-500 overflow-hidden cursor-pointer"
                         title="Click to try interactive preview"
                     >
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -304,7 +304,7 @@ export default function HomePage() {
                     {/* Feature 2: PDF Export */}
                     <div
                         onClick={() => setActiveFeature('report')}
-                        className="group relative bg-slate-800/50 backdrop-blur-sm rounded-3xl border border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 overflow-hidden flex flex-col cursor-pointer"
+                        className="group relative bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-white/10 ring-1 ring-white/5 shadow-2xl hover:shadow-purple-500/20 hover:border-purple-500/50 transition-all duration-500 overflow-hidden flex flex-col cursor-pointer"
                         title="Click to view sample report"
                     >
                         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -380,7 +380,7 @@ export default function HomePage() {
                     {/* Step 1 */}
                     <div className="relative group">
                         <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="relative p-8 rounded-3xl bg-slate-800/40 border border-slate-700/50 hover:bg-slate-800/80 hover:border-blue-500/30 transition-all duration-300 text-center height-full">
+                        <div className="relative p-8 rounded-3xl bg-slate-900/80 backdrop-blur-md border border-white/10 ring-1 ring-white/5 shadow-xl hover:bg-slate-900 hover:border-blue-500/40 hover:shadow-blue-500/10 transition-all duration-300 text-center height-full">
                             <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-500/20 to-blue-600/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-blue-500/20">
                                 <FileUp className="w-10 h-10 text-blue-400" />
                             </div>
@@ -393,7 +393,7 @@ export default function HomePage() {
                     {/* Step 2 */}
                     <div className="relative group">
                         <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="relative p-8 rounded-3xl bg-slate-800/40 border border-slate-700/50 hover:bg-slate-800/80 hover:border-purple-500/30 transition-all duration-300 text-center height-full">
+                        <div className="relative p-8 rounded-3xl bg-slate-900/80 backdrop-blur-md border border-white/10 ring-1 ring-white/5 shadow-xl hover:bg-slate-900 hover:border-purple-500/40 hover:shadow-purple-500/10 transition-all duration-300 text-center height-full">
                             <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-500/20 to-purple-600/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-purple-500/20">
                                 <BrainCircuit className="w-10 h-10 text-purple-400" />
                             </div>
@@ -406,7 +406,7 @@ export default function HomePage() {
                     {/* Step 3 */}
                     <div className="relative group">
                         <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="relative p-8 rounded-3xl bg-slate-800/40 border border-slate-700/50 hover:bg-slate-800/80 hover:border-green-500/30 transition-all duration-300 text-center height-full">
+                        <div className="relative p-8 rounded-3xl bg-slate-900/80 backdrop-blur-md border border-white/10 ring-1 ring-white/5 shadow-xl hover:bg-slate-900 hover:border-green-500/40 hover:shadow-green-500/10 transition-all duration-300 text-center height-full">
                             <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-500/20 to-green-600/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-green-500/20">
                                 <FileCheck className="w-10 h-10 text-green-400" />
                             </div>
