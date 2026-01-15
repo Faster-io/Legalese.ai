@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 import uvicorn
+from datetime import datetime, timezone, timedelta
 from database import engine, Base, get_db
 import models, extraction, ai, report_generator
 import os 
@@ -60,14 +61,16 @@ def health_check():
 
 
 @app.post("/api/create-checkout-session")
-async def create_checkout_session(user_id: str = Form(...)): 
-    # Mock checkout creation using proper Dodo Payments API structure if SDK is missing
-    # or just return a mock URL for this demo.
+async def create_checkout_session(user_id: str = Form(...), product_type: str = Form("monthly")): 
+    # Dodo Payments Links
+    # ideally we would use the API to attach metadata (user_id)
+    # For MVP, returning direct links. Logic assumes user email matches or manual reconciliation.
     
-    # Real implementation would be calls to Dodo API
-    # For MVP demonstration, we redirect to the payment link
-    # In a real app, you might want to pass user_id as metadata to Dodo so you can link the webhook back
-    return {"checkout_url": "https://checkout.dodopayments.com/buy/pdt_0NWHk0ALtx4aENNGHWVUR?quantity=1"}
+    if product_type == "weekly":
+        return {"checkout_url": "https://checkout.dodopayments.com/buy/pdt_0NWLQze2kqCe0uYTXXToo?quantity=1"}
+    else:
+        # Default Monthly
+        return {"checkout_url": "https://checkout.dodopayments.com/buy/pdt_0NWHk0ALtx4aENNGHWVUR?quantity=1"}
 
 @app.post("/api/analyze")
 async def analyze_document(
@@ -93,10 +96,17 @@ async def analyze_document(
              db.add(user)
              db.commit()
         
-        if not user.is_premium:
+        # Check Premium Status (Subscription or Time-Pass)
+        is_active_premium = user.is_premium
+        if user.premium_expires_at:
+            # Check if expired
+            if datetime.now(timezone.utc) > user.premium_expires_at:
+                is_active_premium = False
+
+        if not is_active_premium:
             doc_count = db.query(models.Document).filter(models.Document.user_id == user_id).count()
-            if doc_count >= 3: # Updated limit to 3
-                raise HTTPException(status_code=402, detail="Free limit reached. Upgrade to Premium.")
+            if doc_count >= 3: 
+                raise HTTPException(status_code=402, detail="Free limit reached or Pass expired. Upgrade to Premium.")
     
         # 4. Save Document
         db_doc = models.Document(user_id=user_id, filename=file.filename, content=text)
@@ -162,15 +172,40 @@ def get_document(doc_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/webhooks/dodo")
 async def dodo_webhook(request: Request, db: Session = Depends(get_db)):
-    payload = await request.body()
-    headers = request.headers
-    # Verify signature logic here using Dodo SDK
-    # webhook_id = headers.get("webhook-id")
-    # if not Webhook.verify(payload, headers, os.getenv("DODO_PAYMENTS_WEBHOOK_KEY")):
-    #    raise HTTPException(status_code=400, detail="Invalid signature")
-    
-    # Handle event (e.g. subscription.created -> set is_premium=True)
-    return {"status": "received"}
+    try:
+        # In production: Verify Signature
+        payload = await request.json()
+        
+        event_name = payload.get('type') # e.g. 'payment.succeeded'
+        data = payload.get('data', {})
+        
+        if event_name == 'payment.succeeded':
+            # Identify User by Email
+            customer_email = data.get('customer', {}).get('email')
+            
+            if customer_email:
+                user = db.query(models.User).filter(models.User.email == customer_email).first()
+                if user:
+                    items = data.get('lines', {}).get('data', [])
+                    # Check for 1-Week Pass Product ID
+                    is_weekly_pass = any(item.get('price', {}).get('product_id') == 'pdt_0NWLQze2kqCe0uYTXXToo' for item in items)
+                    
+                    if is_weekly_pass:
+                        user.is_premium = True
+                        user.premium_expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+                        db.commit()
+                        print(f"Activated 1-Week Pass for {customer_email}")
+                    else:
+                        # Assume monthly subscription (Lifetime valid until cancelled/webhook logic extended)
+                        user.is_premium = True
+                        user.premium_expires_at = None # Clear expiry
+                        db.commit()
+                        print(f"Activated Premium for {customer_email}")
+                        
+        return {"status": "received"}
+    except Exception as e:
+        print(f"Webhook Error: {e}")
+        return {"status": "error", "detail": str(e)}
 
 @app.get("/api/user/status")
 def get_user_status(user_id: str, db: Session = Depends(get_db)):
@@ -181,15 +216,23 @@ def get_user_status(user_id: str, db: Session = Depends(get_db)):
         return {
             "is_premium": False,
             "document_count": 0,
-            "limit": 3 # Updated limit to 3
+            "limit": 3,
+            "premium_expires_at": None
         }
     
+    # Check Expiry
+    is_active_premium = user.is_premium
+    if user.premium_expires_at:
+        if datetime.now(timezone.utc) > user.premium_expires_at:
+            is_active_premium = False
+
     doc_count = db.query(models.Document).filter(models.Document.user_id == user_id).count()
     
     return {
-        "is_premium": user.is_premium,
+        "is_premium": is_active_premium,
+        "premium_expires_at": user.premium_expires_at,
         "document_count": doc_count,
-        "limit": 3 if not user.is_premium else -1 # Updated limit to 3
+        "limit": 3 if not is_active_premium else -1
     }
 
 class RewriteRequest(BaseModel):

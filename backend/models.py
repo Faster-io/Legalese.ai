@@ -9,6 +9,7 @@ class User(Base):
     id = Column(String, primary_key=True, index=True) # Clerk ID
     email = Column(String, unique=True, index=True)
     is_premium = Column(Boolean, default=False)
+    premium_expires_at = Column(DateTime(timezone=True), nullable=True) # For 1-Week Pass
     created_at = Column(DateTime, default=datetime.utcnow)
 
     documents = relationship("Document", back_populates="owner")

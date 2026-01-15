@@ -4,11 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { API_ENDPOINTS } from '@/config/api';
+import CountdownTimer from './CountdownTimer';
 
 interface UserStatus {
     is_premium: boolean;
     document_count: number;
     limit: number;
+    premium_expires_at?: string;
 }
 
 const DocumentVault = () => {
@@ -78,7 +80,6 @@ const DocumentVault = () => {
                     const err = await res.json();
                     errDetail = err.detail;
                 } catch (e) {
-                    // If response is not JSON (e.g. 500 HTML from Vercel)
                     console.error("Non-JSON response received");
                     if (res.status === 500) {
                         const errorMsg = String(errDetail || "");
@@ -151,8 +152,13 @@ const DocumentVault = () => {
                         )}
 
                         {status?.is_premium && (
-                            <div className="bg-blue-900/30 px-4 py-2 rounded-lg border border-blue-500/30">
-                                <span className="text-blue-200 font-semibold">✨ Premium Plan</span>
+                            <div className="flex items-center gap-3">
+                                <div className="bg-blue-900/30 px-4 py-2 rounded-lg border border-blue-500/30">
+                                    <span className="text-blue-200 font-semibold">✨ Premium Plan</span>
+                                </div>
+                                {status.premium_expires_at && (
+                                    <CountdownTimer targetDate={status.premium_expires_at} />
+                                )}
                             </div>
                         )}
 
@@ -198,7 +204,6 @@ const DocumentVault = () => {
                     {documents.map((doc: any) => {
                         // Safe extraction of risk score from first result if exists
                         const firstClause = doc.results && doc.results.length > 0 ? doc.results[0] : null;
-                        const riskLevel = firstClause ? firstClause.risk : 'Reviewed';
 
                         return (
                             <div
