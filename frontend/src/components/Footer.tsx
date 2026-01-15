@@ -42,7 +42,9 @@ export default function Footer() {
 
                 <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-slate-500">
                     <p>© {new Date().getFullYear()} Legalese.ai. All rights reserved.</p>
-                    <p className="mt-2 md:mt-0">Built with ❤️ for better contracts.</p>
+                    <p className="mt-2 md:mt-0 flex items-center gap-1">
+                        Built with ❤️ by <a href="https://vignesh-portfolio.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-blue-400 border-b border-transparent hover:border-blue-400 transition-all ml-1">Vignesh</a>
+                    </p>
                 </div>
             </div>
         </footer>

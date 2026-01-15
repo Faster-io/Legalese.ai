@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
 import { API_ENDPOINTS } from '@/config/api';
+import { useDev } from '@/context/DevContext';
 
 interface AnalysisResult {
     text: string;
@@ -25,14 +27,26 @@ const AnalysisView = () => {
     const [rewritingId, setRewritingId] = useState<number | null>(null);
     const [rewrittenText, setRewrittenText] = useState<{ [key: number]: string }>({});
 
+    const { userId } = useAuth();
+    const { isDev, isProOverride } = useDev();
+    const [isPremium, setIsPremium] = useState(false);
+
     useEffect(() => {
-        if (!id) return;
+        if (!id || !userId) return;
         const fetchData = async () => {
             try {
-                const res = await fetch(API_ENDPOINTS.document(Number(id)));
-                if (res.ok) {
-                    const json = await res.json();
+                // Fetch Document
+                const docRes = await fetch(API_ENDPOINTS.document(Number(id)));
+                if (docRes.ok) {
+                    const json = await docRes.json();
                     setData(json);
+                }
+
+                // Fetch User Status for gating features
+                const statusRes = await fetch(`${API_ENDPOINTS.userStatus}?user_id=${userId}`);
+                if (statusRes.ok) {
+                    const statusData = await statusRes.json();
+                    setIsPremium(statusData.is_premium);
                 }
             } catch (e) {
                 console.error(e);
@@ -41,7 +55,9 @@ const AnalysisView = () => {
             }
         };
         fetchData();
-    }, [id]);
+    }, [id, userId]);
+
+    const effectivePremium = (isDev && isProOverride) ? true : isPremium;
 
     const handleRewrite = async (index: number, text: string) => {
         setRewritingId(index);
@@ -88,10 +104,11 @@ const AnalysisView = () => {
                             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span> Safe</span>
                         </div>
                         <button
-                            onClick={() => window.open(API_ENDPOINTS.export(data.document_id), '_blank')}
-                            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold rounded border border-slate-700 transition-colors flex items-center gap-2"
+                            onClick={() => effectivePremium && window.open(API_ENDPOINTS.export(data.document_id), '_blank')}
+                            className={`px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded border border-slate-700 transition-colors flex items-center gap-2 ${effectivePremium ? 'hover:bg-slate-700' : 'opacity-50 cursor-not-allowed'}`}
+                            title={!effectivePremium ? "Upgrade to Premium to export reports" : "Download PDF"}
                         >
-                            <span>📥</span> PDF Report
+                            <span>{effectivePremium ? '📥' : '🔒'}</span> PDF Report
                         </button>
                     </div>
                 </div>
@@ -138,6 +155,10 @@ const AnalysisView = () => {
                                             <p className="text-slate-300 text-sm italic border-l-2 border-blue-500 pl-3">
                                                 "{rewrittenText[idx]}"
                                             </p>
+                                        </div>
+                                    ) : !effectivePremium ? (
+                                        <div className="mt-2 text-sm text-slate-500 flex items-center gap-2 bg-slate-900/50 p-2 rounded border border-slate-800/50 w-fit">
+                                            🔒 Upgrade to unlock AI Re-writer
                                         </div>
                                     ) : (
                                         <button

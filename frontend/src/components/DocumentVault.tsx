@@ -11,13 +11,24 @@ interface UserStatus {
     limit: number;
 }
 
+import { useDev } from '@/context/DevContext';
+
 const DocumentVault = () => {
     const router = useRouter();
     const { userId } = useAuth();
+    const { isDev, isProOverride, mockCreditsUsed } = useDev(); // Hook integration
+
     const [isUploading, setIsUploading] = useState(false);
     const [status, setStatus] = useState<UserStatus | null>(null);
     const [documents, setDocuments] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Calculate effective status based on Dev Tools overrides
+    const effectiveStatus = status ? {
+        ...status,
+        is_premium: (isDev && isProOverride) ? true : status.is_premium,
+        document_count: (isDev && mockCreditsUsed === 0) ? 0 : status.document_count
+    } : null;
 
     useEffect(() => {
         if (!userId) return;
@@ -49,8 +60,8 @@ const DocumentVault = () => {
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.[0]) return;
 
-        // Client-side limit check
-        if (status && !status.is_premium && status.document_count >= status.limit) {
+        // Use effectiveStatus for limit check
+        if (effectiveStatus && !effectiveStatus.is_premium && effectiveStatus.document_count >= effectiveStatus.limit) {
             router.push('/subscribe');
             return;
         }
@@ -68,7 +79,7 @@ const DocumentVault = () => {
             });
 
             if (!res.ok) {
-                if (res.status === 402) {
+                if (res.status === 402 && !isProOverride) { // Allow bypass if Pro Override
                     router.push('/subscribe');
                     return;
                 }
@@ -95,7 +106,7 @@ const DocumentVault = () => {
         );
     }
 
-    const isLimitReached = status && !status.is_premium && status.document_count >= status.limit;
+    const isLimitReached = effectiveStatus && !effectiveStatus.is_premium && effectiveStatus.document_count >= effectiveStatus.limit;
 
     return (
         <div className="bg-slate-900 min-h-screen p-8">
@@ -112,7 +123,7 @@ const DocumentVault = () => {
                             </button>
                         </div>
                         <p className="text-slate-400 mt-1">
-                            {status && !status.is_premium
+                            {effectiveStatus && !effectiveStatus.is_premium
                                 ? "Your first 3 scans are on us! Analyze contracts instantly."
                                 : "Manage and analyze your legal contracts"}
                         </p>
@@ -120,16 +131,16 @@ const DocumentVault = () => {
 
                     {/* Usage Stats & Actions */}
                     <div className="flex items-center gap-4">
-                        {status && !status.is_premium && (
+                        {effectiveStatus && !effectiveStatus.is_premium && (
                             <div className="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700">
                                 <span className="text-slate-400 text-sm">Free Plan Usage: </span>
                                 <span className={`font-bold ${isLimitReached ? 'text-red-400' : 'text-green-400'}`}>
-                                    {status.document_count}/{status.limit}
+                                    {effectiveStatus.document_count}/{effectiveStatus.limit}
                                 </span>
                             </div>
                         )}
 
-                        {status?.is_premium && (
+                        {effectiveStatus?.is_premium && (
                             <div className="bg-blue-900/30 px-4 py-2 rounded-lg border border-blue-500/30">
                                 <span className="text-blue-200 font-semibold">✨ Premium Plan</span>
                             </div>
@@ -161,7 +172,7 @@ const DocumentVault = () => {
                 </div>
 
                 {/* Available Plans Link (if free) */}
-                {!status?.is_premium && !isLimitReached && (
+                {!effectiveStatus?.is_premium && !isLimitReached && (
                     <div className="mb-8 flex justify-end">
                         <button
                             onClick={() => router.push('/subscribe')}
