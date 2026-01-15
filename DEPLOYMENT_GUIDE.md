@@ -29,9 +29,10 @@ git push origin main
 
 1. Go to https://vercel.com/new
 2. Import your GitHub repository
-3. **Important**: Set the **Root Directory** to `backend`
-4. Framework Preset: **Other**
-5. Click **Deploy** (it will fail first, that's okay)
+3. **CRITICAL**: Click "Edit" next to "Root Directory" and type: `backend`
+4. Framework Preset: **Other** (Vercel will auto-detect Python)
+5. **Do NOT click Deploy yet** - go to Step 3 first to add environment variables
+
 
 ### Step 3: Configure Backend Environment Variables
 
