@@ -12,14 +12,23 @@ import os
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load model on startup
-    ai.load_ai_model()
+    try:
+        ai.load_ai_model()
+    except Exception as e:
+        print(f"Warning: Could not load AI model: {e}")
     
     # Create tables
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Database tables created successfully")
+    except Exception as e:
+        print(f"Warning: Could not create database tables: {e}")
+        print("App will continue but database operations may fail")
     
     yield
     # Clean up
     print("Shutting down...")
+
 
 app = FastAPI(lifespan=lifespan)
 
