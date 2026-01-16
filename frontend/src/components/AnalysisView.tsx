@@ -257,194 +257,195 @@ const AnalysisView = () => {
                                 </ResponsiveContainer>
                             </div>
                         </div>
+                    </div>
                 )}
 
-                        {/* Summary & Alerts Rows */}
-                        {data.score !== undefined && (
-                            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-100">
-                                {/* Summary */}
-                                <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                        <Info className="w-24 h-24 text-blue-500" />
-                                    </div>
-                                    <h3 className="text-slate-400 text-sm font-semibold mb-3 uppercase tracking-wider flex items-center gap-2">
-                                        <Info className="w-4 h-4 text-blue-500" /> Analysis Summary
-                                    </h3>
-                                    <p className="text-slate-300 leading-relaxed text-sm">
-                                        {data.summary || "Analysis complete. Review the risks below."}
-                                    </p>
-                                </div>
+                {/* Summary & Alerts Rows */}
+                {data.score !== undefined && (
+                    <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-100">
+                        {/* Summary */}
+                        <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <Info className="w-24 h-24 text-blue-500" />
+                            </div>
+                            <h3 className="text-slate-400 text-sm font-semibold mb-3 uppercase tracking-wider flex items-center gap-2">
+                                <Info className="w-4 h-4 text-blue-500" /> Analysis Summary
+                            </h3>
+                            <p className="text-slate-300 leading-relaxed text-sm">
+                                {data.summary || "Analysis complete. Review the risks below."}
+                            </p>
+                        </div>
 
-                                {/* Alerts */}
-                                <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
-                                    <h3 className="text-slate-400 text-sm font-semibold mb-3 uppercase tracking-wider flex items-center gap-2">
-                                        <AlertTriangle className="w-4 h-4 text-red-500" /> Critical Alerts
-                                    </h3>
-                                    <div className="space-y-3">
-                                        {data.results.filter(r => r.risk === 'Red' || r.risk === 'High').slice(0, 3).map((item, i) => (
-                                            <div key={i} className="flex items-center justify-between bg-red-900/10 border border-red-500/20 p-3 rounded-lg">
-                                                <span className="text-red-300 text-sm font-medium truncate max-w-[70%]">
-                                                    {item.text.substring(0, 50)}...
-                                                </span>
+                        {/* Alerts */}
+                        <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+                            <h3 className="text-slate-400 text-sm font-semibold mb-3 uppercase tracking-wider flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4 text-red-500" /> Critical Alerts
+                            </h3>
+                            <div className="space-y-3">
+                                {data.results.filter(r => r.risk === 'Red' || r.risk === 'High').slice(0, 3).map((item, i) => (
+                                    <div key={i} className="flex items-center justify-between bg-red-900/10 border border-red-500/20 p-3 rounded-lg">
+                                        <span className="text-red-300 text-sm font-medium truncate max-w-[70%]">
+                                            {item.text.substring(0, 50)}...
+                                        </span>
+                                        <button
+                                            onClick={() => document.getElementById(`clause-${data.results.indexOf(item)}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                                            className="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1 rounded border border-red-500/20 transition-colors"
+                                        >
+                                            View
+                                        </button>
+                                    </div>
+                                ))}
+                                {data.results.filter(r => r.risk === 'Red' || r.risk === 'High').length === 0 && (
+                                    <div className="text-slate-500 italic text-sm text-center py-4">No critical alerts found.</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="space-y-6">
+                    {data.results.map((item, idx) => (
+                        <div key={idx} id={`clause-${idx}`} className={`relative p-6 rounded-xl border backdrop-blur-sm transition-all ${item.risk === 'Red' ? 'bg-red-900/10 border-red-500/30' :
+                            item.risk === 'Yellow' ? 'bg-yellow-900/10 border-yellow-500/30' :
+                                'bg-green-900/10 border-green-500/30'
+                            }`}>
+
+                            <div className="mb-3">
+                                <h3 className="text-sm font-bold uppercase tracking-wider mb-1" style={{
+                                    color: item.risk === 'Red' ? '#ef4444' :
+                                        item.risk === 'Yellow' ? '#eab308' :
+                                            '#22c55e'
+                                }}>
+                                    {item.risk === 'Red' ? 'Critical Risk' : item.risk === 'Yellow' ? 'Needs Review' : 'Standard Term'}
+                                </h3>
+                                <p className="text-slate-200 font-medium italic">"{item.text.substring(0, 150)}..."</p>
+                            </div>
+
+                            <div className="bg-slate-900/80 p-4 rounded-lg border border-white/5 mb-4">
+                                <p className="text-sm text-slate-400 leading-relaxed">
+                                    <span className="font-semibold text-slate-300">Analysis: </span>
+                                    {item.explanation}
+                                </p>
+                            </div>
+
+                            {/* Revision Logic - Ungated for testing */}
+                            {item.risk !== 'Green' && (
+                                <div>
+                                    {rewrittenText[idx] ? (
+                                        <div className="mt-4 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 animate-fadeIn">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h4 className="text-blue-400 text-sm font-bold">✨ AI Suggested Revision</h4>
                                                 <button
-                                                    onClick={() => document.getElementById(`clause-${data.results.indexOf(item)}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-                                                    className="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1 rounded border border-red-500/20 transition-colors"
+                                                    onClick={() => navigator.clipboard.writeText(rewrittenText[idx])}
+                                                    className="text-xs text-slate-500 hover:text-white"
                                                 >
-                                                    View
+                                                    Copy
                                                 </button>
                                             </div>
-                                        ))}
-                                        {data.results.filter(r => r.risk === 'Red' || r.risk === 'High').length === 0 && (
-                                            <div className="text-slate-500 italic text-sm text-center py-4">No critical alerts found.</div>
-                                        )}
+                                            <p className="text-slate-300 text-sm italic border-l-2 border-blue-500 pl-3">
+                                                "{rewrittenText[idx]}"
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleRewrite(idx, item.text)}
+                                            disabled={rewritingId === idx}
+                                            className="mt-2 text-sm bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-lg transition-all flex items-center gap-2"
+                                        >
+                                            {rewritingId === idx ? (
+                                                <>
+                                                    <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full"></span>
+                                                    Drafting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span>✨</span> Propose Revision
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+            {/* Floating Chat Button */}
+            <button
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className="fixed bottom-8 right-8 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 z-50"
+            >
+                {isChatOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-7 h-7" />}
+            </button>
+
+            {/* Chat Window */}
+            {isChatOpen && (
+                <div className="fixed bottom-24 right-8 w-96 h-[500px] bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
+                    {/* Header */}
+                    <div className="bg-slate-800 p-4 border-b border-slate-700 flex items-center gap-2">
+                        <Bot className="w-5 h-5 text-blue-400" />
+                        <h3 className="font-bold text-white">Document Assistant</h3>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-900/95">
+                        {chatHistory.length === 0 && (
+                            <div className="text-center text-slate-500 mt-10">
+                                <p className="text-sm">Ask me anything about this contract!</p>
+                                <p className="text-xs mt-2">Example: "Is there a termination fee?"</p>
+                            </div>
+                        )}
+                        {chatHistory.map((msg, i) => (
+                            <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                {msg.role === 'assistant' && (
+                                    <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0 border border-blue-500/30">
+                                        <Bot className="w-4 h-4 text-blue-400" />
+                                    </div>
+                                )}
+                                <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700'}`}>
+                                    {msg.content}
+                                </div>
+                            </div>
+                        ))}
+                        {chatLoading && (
+                            <div className="flex gap-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0 border border-blue-500/30">
+                                    <Bot className="w-4 h-4 text-blue-400" />
+                                </div>
+                                <div className="bg-slate-800 p-3 rounded-2xl rounded-tl-none border border-slate-700">
+                                    <div className="flex gap-1">
+                                        <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></span>
+                                        <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce delay-100"></span>
+                                        <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce delay-200"></span>
                                     </div>
                                 </div>
                             </div>
                         )}
-
-                        <div className="space-y-6">
-                            {data.results.map((item, idx) => (
-                                <div key={idx} id={`clause-${idx}`} className={`relative p-6 rounded-xl border backdrop-blur-sm transition-all ${item.risk === 'Red' ? 'bg-red-900/10 border-red-500/30' :
-                                    item.risk === 'Yellow' ? 'bg-yellow-900/10 border-yellow-500/30' :
-                                        'bg-green-900/10 border-green-500/30'
-                                    }`}>
-
-                                    <div className="mb-3">
-                                        <h3 className="text-sm font-bold uppercase tracking-wider mb-1" style={{
-                                            color: item.risk === 'Red' ? '#ef4444' :
-                                                item.risk === 'Yellow' ? '#eab308' :
-                                                    '#22c55e'
-                                        }}>
-                                            {item.risk === 'Red' ? 'Critical Risk' : item.risk === 'Yellow' ? 'Needs Review' : 'Standard Term'}
-                                        </h3>
-                                        <p className="text-slate-200 font-medium italic">"{item.text.substring(0, 150)}..."</p>
-                                    </div>
-
-                                    <div className="bg-slate-900/80 p-4 rounded-lg border border-white/5 mb-4">
-                                        <p className="text-sm text-slate-400 leading-relaxed">
-                                            <span className="font-semibold text-slate-300">Analysis: </span>
-                                            {item.explanation}
-                                        </p>
-                                    </div>
-
-                                    {/* Revision Logic - Ungated for testing */}
-                                    {item.risk !== 'Green' && (
-                                        <div>
-                                            {rewrittenText[idx] ? (
-                                                <div className="mt-4 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 animate-fadeIn">
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <h4 className="text-blue-400 text-sm font-bold">✨ AI Suggested Revision</h4>
-                                                        <button
-                                                            onClick={() => navigator.clipboard.writeText(rewrittenText[idx])}
-                                                            className="text-xs text-slate-500 hover:text-white"
-                                                        >
-                                                            Copy
-                                                        </button>
-                                                    </div>
-                                                    <p className="text-slate-300 text-sm italic border-l-2 border-blue-500 pl-3">
-                                                        "{rewrittenText[idx]}"
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleRewrite(idx, item.text)}
-                                                    disabled={rewritingId === idx}
-                                                    className="mt-2 text-sm bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-lg transition-all flex items-center gap-2"
-                                                >
-                                                    {rewritingId === idx ? (
-                                                        <>
-                                                            <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full"></span>
-                                                            Drafting...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <span>✨</span> Propose Revision
-                                                        </>
-                                                    )}
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
                     </div>
-            {/* Floating Chat Button */}
-                <button
-                    onClick={() => setIsChatOpen(!isChatOpen)}
-                    className="fixed bottom-8 right-8 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 z-50"
-                >
-                    {isChatOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-7 h-7" />}
-                </button>
 
-                {/* Chat Window */}
-                {isChatOpen && (
-                    <div className="fixed bottom-24 right-8 w-96 h-[500px] bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
-                        {/* Header */}
-                        <div className="bg-slate-800 p-4 border-b border-slate-700 flex items-center gap-2">
-                            <Bot className="w-5 h-5 text-blue-400" />
-                            <h3 className="font-bold text-white">Document Assistant</h3>
+                    {/* Input */}
+                    <form onSubmit={handleChatSubmit} className="p-4 bg-slate-800 border-t border-slate-700">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                placeholder="Type your question..."
+                                className="w-full bg-slate-900 border border-slate-700 rounded-full px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 pr-12"
+                            />
+                            <button
+                                type="submit"
+                                disabled={!chatInput.trim() || chatLoading}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
+                            >
+                                <Send className="w-4 h-4" />
+                            </button>
                         </div>
-
-                        {/* Messages */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-900/95">
-                            {chatHistory.length === 0 && (
-                                <div className="text-center text-slate-500 mt-10">
-                                    <p className="text-sm">Ask me anything about this contract!</p>
-                                    <p className="text-xs mt-2">Example: "Is there a termination fee?"</p>
-                                </div>
-                            )}
-                            {chatHistory.map((msg, i) => (
-                                <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    {msg.role === 'assistant' && (
-                                        <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0 border border-blue-500/30">
-                                            <Bot className="w-4 h-4 text-blue-400" />
-                                        </div>
-                                    )}
-                                    <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700'}`}>
-                                        {msg.content}
-                                    </div>
-                                </div>
-                            ))}
-                            {chatLoading && (
-                                <div className="flex gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0 border border-blue-500/30">
-                                        <Bot className="w-4 h-4 text-blue-400" />
-                                    </div>
-                                    <div className="bg-slate-800 p-3 rounded-2xl rounded-tl-none border border-slate-700">
-                                        <div className="flex gap-1">
-                                            <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></span>
-                                            <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce delay-100"></span>
-                                            <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce delay-200"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Input */}
-                        <form onSubmit={handleChatSubmit} className="p-4 bg-slate-800 border-t border-slate-700">
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={chatInput}
-                                    onChange={(e) => setChatInput(e.target.value)}
-                                    placeholder="Type your question..."
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-full px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 pr-12"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={!chatInput.trim() || chatLoading}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
-                                >
-                                    <Send className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
-            </div>
-            );
+                    </form>
+                </div>
+            )}
+        </div>
+    );
 };
 
-            export default AnalysisView;
+export default AnalysisView;
