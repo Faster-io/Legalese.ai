@@ -40,15 +40,20 @@ def generate_pdf_report(doc_data):
     elements.append(Spacer(1, 0.2 * inch))
     
     # Risk Summary
-    high_risks = len([r for r in doc_data['results'] if r['risk'] == 'High'])
-    medium_risks = len([r for r in doc_data['results'] if r['risk'] == 'Medium'])
-    low_risks = len([r for r in doc_data['results'] if r['risk'] == 'Low'])
+    score = doc_data.get('score', 0)
+    high_risks = len([r for r in doc_data['results'] if r['risk'] == 'Red'])
+    medium_risks = len([r for r in doc_data['results'] if r['risk'] == 'Yellow'])
+    low_risks = len([r for r in doc_data['results'] if r['risk'] == 'Green'])
+    
+    score_color = '#22c55e' if score >= 80 else '#eab308' if score >= 50 else '#ef4444'
     
     summary_text = f"""
-    <b>Risk Summary:</b><br/>
-    High Risk: {high_risks}<br/>
-    Medium Risk: {medium_risks}<br/>
-    Low Risk: {low_risks}
+    <b>EXECUTIVE SUMMARY</b><br/><br/>
+    <b>Overall Risk Score: <font color='{score_color}' size='14'>{score}/100</font></b><br/><br/>
+    <b>Risk Distribution:</b><br/>
+    <font color='#ef4444'>Critical Issues: {high_risks}</font><br/>
+    <font color='#eab308'>Warnings: {medium_risks}</font><br/>
+    <font color='#22c55e'>Safe Clauses: {low_risks}</font>
     """
     elements.append(Paragraph(summary_text, styles['Normal']))
     elements.append(Spacer(1, 0.3 * inch))
@@ -59,11 +64,11 @@ def generate_pdf_report(doc_data):
     for item in doc_data['results']:
         # Color coding text for risk
         risk_color = colors.black
-        if item['risk'] == 'High':
+        if item['risk'] == 'Red':
             risk_color = colors.red
-        elif item['risk'] == 'Medium':
+        elif item['risk'] == 'Yellow':
             risk_color = colors.orange
-        elif item['risk'] == 'Low':
+        elif item['risk'] == 'Green':
             risk_color = colors.green
             
         risk_cell = Paragraph(f"<font color='{risk_color}'><b>{item['risk']}</b></font>", styles['Normal'])

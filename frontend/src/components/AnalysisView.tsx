@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
-import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Activity } from 'lucide-react';
+import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { API_ENDPOINTS } from '@/config/api';
 
 interface AnalysisResult {
@@ -17,6 +18,7 @@ interface DocumentData {
     filename: string;
     content: string;
     results: AnalysisResult[];
+    score?: number;
 }
 
 const AnalysisView = () => {
@@ -33,6 +35,10 @@ const AnalysisView = () => {
     const [chatInput, setChatInput] = useState('');
     const [chatLoading, setChatLoading] = useState(false);
 
+    // Chart State
+    const [riskMetrics, setRiskMetrics] = useState<{ name: string, score: number }[]>([]);
+    const [chartData, setChartData] = useState<{ name: string, value: number }[]>([]);
+
     const { userId } = useAuth();
     const { user } = useUser();
     // Reverted DevTools: No useDev hook
@@ -46,8 +52,21 @@ const AnalysisView = () => {
                 if (docRes.ok) {
                     const json = await docRes.json();
                     setData(json);
+
+                    // Init Metrics
+                    if (json.score !== undefined) {
+                        setRiskMetrics([{ name: 'Initial', score: json.score }]);
+
+                        // Calc distribution
+                        const counts = { Red: 0, Yellow: 0, Green: 0 };
+                        json.results.forEach((r: any) => counts[r.risk as keyof typeof counts]++);
+                        setChartData([
+                            { name: 'Critical', value: counts.Red },
+                            { name: 'Review', value: counts.Yellow },
+                            { name: 'Safe', value: counts.Green }
+                        ]);
+                    }
                 }
-                // No need to fetch user status for gating if we ungate for testing
             } catch (e) {
                 console.error(e);
             } finally {
@@ -67,6 +86,31 @@ const AnalysisView = () => {
             });
             const json = await res.json();
             setRewrittenText(prev => ({ ...prev, [index]: json.rewritten_text }));
+
+            // update trend - Assume improvement to Green (10pts)
+            // Only update if not already rewritten (simple check)
+            if (!rewrittenText[index] && data) {
+                // Recalc score delta
+                // Current Item Risk
+                const itemRisk = data.results[index].risk;
+                const currentPts = itemRisk === 'Green' ? 10 : itemRisk === 'Yellow' ? 5 : 0;
+                const newPts = 10; // Assumed Green after AI Rewrite
+                const gain = newPts - currentPts;
+
+                if (gain > 0) {
+                    const totalClauses = data.results.length;
+                    // Approximate new score based on gain
+                    // Formula: NewScore = ((OldSum + Gain) / Max) * 100
+                    // Need raw sum. Reverse eng: Sum = (Score * Max) / 100
+                    const lastScore = riskMetrics[riskMetrics.length - 1].score;
+                    const maxPoints = totalClauses * 10;
+                    const currentSum = (lastScore * maxPoints) / 100;
+                    const newSum = currentSum + gain;
+                    const newScore = Math.min(100, Math.round((newSum / maxPoints) * 100));
+
+                    setRiskMetrics(prev => [...prev, { name: 'Optimized', score: newScore }]);
+                }
+            }
         } catch (e) {
             alert("Failed to generate revision");
         } finally {
@@ -147,6 +191,73 @@ const AnalysisView = () => {
                         </button>
                     </div>
                 </div>
+
+                {/* Executive Dashboard */}
+                {data.score !== undefined && (
+                    <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-5 duration-500">
+                        {/* Score Card */}
+                        <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+                            <h3 className="text-slate-400 text-sm font-semibold mb-4 uppercase tracking-wider flex items-center gap-2">
+                                <Activity className="w-4 h-4" /> Overall Risk Score
+                            </h3>
+                            <div className="h-48 relative flex items-center justify-center">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={chartData}
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                            stroke="none"
+                                        >
+                                            {chartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.name === 'Critical' ? '#ef4444' : entry.name === 'Review' ? '#eab308' : '#22c55e'} />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip
+                                            contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }}
+                                            itemStyle={{ color: '#fff' }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                {/* Center Score */}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span className={`text-4xl font-bold ${data.score >= 80 ? 'text-green-400' : data.score >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                        {riskMetrics.length > 1 ? riskMetrics[riskMetrics.length - 1].score : data.score}
+                                    </span>
+                                    <span className="text-xs text-slate-500 font-medium uppercase">/ 100</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Trend Chart */}
+                        <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+                            <h3 className="text-slate-400 text-sm font-semibold mb-4 uppercase tracking-wider">Optimization Impact</h3>
+                            <div className="h-48">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={riskMetrics}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
+                                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                        <RechartsTooltip
+                                            contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="score"
+                                            stroke="#3b82f6"
+                                            strokeWidth={3}
+                                            dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#1e293b' }}
+                                            activeDot={{ r: 6, fill: '#60a5fa' }}
+                                            animationDuration={1500}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="space-y-6">
                     {data.results.map((item, idx) => (

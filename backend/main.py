@@ -141,10 +141,16 @@ async def analyze_document(
         
         db.commit()
         
+        # Calculate Score
+        total_clauses = len(analysis_results)
+        score_sum = sum([10 if x['risk']=='Green' else 5 if x['risk']=='Yellow' else 0 for x in analysis_results])
+        score = int((score_sum / (total_clauses * 10)) * 100) if total_clauses > 0 else 100
+
         return {
             "document_id": db_doc.id,
             "filename": db_doc.filename,
-            "results": analysis_results
+            "results": analysis_results,
+            "score": score
         }
     except HTTPException as he:
         raise he
@@ -168,18 +174,26 @@ def get_document(doc_id: int, db: Session = Depends(get_db)):
     
     # helper to format clauses
     results = []
+    score_sum = 0
     for c in doc.clauses:
         results.append({
             "text": c.text,
             "risk": c.risk_level,
             "explanation": c.explanation
         })
+        if c.risk_level == 'Green': score_sum += 10
+        elif c.risk_level == 'Yellow': score_sum += 5
+        else: score_sum += 0
+    
+    total = len(doc.clauses)
+    score = int((score_sum / (total * 10)) * 100) if total > 0 else 100
         
     return {
         "document_id": doc.id,
         "filename": doc.filename,
         "content" : doc.content,
-        "results": results
+        "results": results,
+        "score": score
     }
 
 @app.delete("/api/documents/{doc_id}")
@@ -318,7 +332,8 @@ def export_report(doc_id: int, db: Session = Depends(get_db)):
     
     doc_data = {
         "filename": doc.filename,
-        "results": results
+        "results": results,
+        "score": int((sum([10 if c['risk']=='Green' else 5 if c['risk']=='Yellow' else 0 for c in results]) / (len(results) * 10)) * 100) if len(results) > 0 else 100
     }
     
     pdf_buffer = report_generator.generate_pdf_report(doc_data)
