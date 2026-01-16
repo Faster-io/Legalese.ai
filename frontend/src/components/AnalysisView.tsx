@@ -282,7 +282,7 @@ const AnalysisView = () => {
                                 <AlertTriangle className="w-4 h-4 text-red-500" /> Critical Alerts
                             </h3>
                             <div className="space-y-3">
-                                {data.results.filter(r => r.risk === 'Red' || r.risk === 'High').slice(0, 3).map((item, i) => (
+                                {data.results.filter(r => r.risk === 'Red').slice(0, 3).map((item, i) => (
                                     <div key={i} className="flex items-center justify-between bg-red-900/10 border border-red-500/20 p-3 rounded-lg">
                                         <span className="text-red-300 text-sm font-medium truncate max-w-[70%]">
                                             {item.text.substring(0, 50)}...
@@ -295,7 +295,7 @@ const AnalysisView = () => {
                                         </button>
                                     </div>
                                 ))}
-                                {data.results.filter(r => r.risk === 'Red' || r.risk === 'High').length === 0 && (
+                                {data.results.filter(r => r.risk === 'Red').length === 0 && (
                                     <div className="text-slate-500 italic text-sm text-center py-4">No critical alerts found.</div>
                                 )}
                             </div>
