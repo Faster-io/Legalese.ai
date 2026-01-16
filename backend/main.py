@@ -146,11 +146,21 @@ async def analyze_document(
         score_sum = sum([10 if x['risk']=='Green' else 5 if x['risk']=='Yellow' else 0 for x in analysis_results])
         score = int((score_sum / (total_clauses * 10)) * 100) if total_clauses > 0 else 100
 
+        # Generate Summary
+        if score >= 80:
+            summary = "This document appears to be balanced and standard. The overall risk profile is Low, with protections largely mutual or standard for this agreement type."
+        elif score >= 50:
+            summary = "This document contains several non-standard terms or ambiguities that require review. Ideally, negotiate the 'Review' items to improve transparency."
+        else:
+            critical_count = len([x for x in analysis_results if x.get('risk') in ['Red', 'High']])
+            summary = f"CAUTION: This document is heavily weighted against you. There are {critical_count} critical clauses that potentialy create significant liability or operational risk."
+
         return {
             "document_id": db_doc.id,
             "filename": db_doc.filename,
             "results": analysis_results,
-            "score": score
+            "score": score,
+            "summary": summary
         }
     except HTTPException as he:
         raise he
@@ -187,13 +197,23 @@ def get_document(doc_id: int, db: Session = Depends(get_db)):
     
     total = len(doc.clauses)
     score = int((score_sum / (total * 10)) * 100) if total > 0 else 100
-        
+    
+    # Generate Summary
+    if score >= 80:
+        summary = "This document appears to be balanced and standard. The overall risk profile is Low, with protections largely mutual or standard for this agreement type."
+    elif score >= 50:
+        summary = "This document contains several non-standard terms or ambiguities that require review. Ideally, negotiate the 'Review' items to improve transparency."
+    else:
+        critical_count = len([x for x in results if x.get('risk') in ['Red', 'High']])
+        summary = f"CAUTION: This document is heavily weighted against you. There are {critical_count} critical clauses that potentially create significant liability or operational risk."
+
     return {
         "document_id": doc.id,
         "filename": doc.filename,
         "content" : doc.content,
         "results": results,
-        "score": score
+        "score": score,
+        "summary": summary
     }
 
 @app.delete("/api/documents/{doc_id}")
