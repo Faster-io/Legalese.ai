@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
 import { API_ENDPOINTS } from '@/config/api';
 import CountdownTimer from './CountdownTimer';
 import { useDev } from '@/context/DevContext';
@@ -17,6 +17,8 @@ interface UserStatus {
 const DocumentVault = () => {
     const router = useRouter();
     const { userId } = useAuth();
+    const { user } = useUser();
+    const userEmail = user?.primaryEmailAddress?.emailAddress;
     const { isProOverride, resetCreditsTrigger } = useDev();
 
     const [isUploading, setIsUploading] = useState(false);
@@ -32,7 +34,7 @@ const DocumentVault = () => {
     const fetchData = async () => {
         try {
             // Fetch User Status
-            const statusRes = await fetch(`${API_ENDPOINTS.userStatus}?user_id=${userId}`);
+            const statusRes = await fetch(`${API_ENDPOINTS.userStatus}?user_id=${userId}&email=${encodeURIComponent(userEmail || '')}`);
             if (statusRes.ok) {
                 const statusData = await statusRes.json();
                 setStatus(statusData);
@@ -65,7 +67,8 @@ const DocumentVault = () => {
         if (!e.target.files?.[0]) return;
 
         // Client-side limit check using effectiveStatus
-        if (effectiveStatus && !effectiveStatus.is_premium && effectiveStatus.document_count >= effectiveStatus.limit) {
+        const isAdmin = userEmail === 'vikastro911@gmail.com';
+        if (!isAdmin && effectiveStatus && !effectiveStatus.is_premium && effectiveStatus.document_count >= effectiveStatus.limit) {
             router.push('/subscribe');
             return;
         }
@@ -75,6 +78,7 @@ const DocumentVault = () => {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("user_id", userId || "anonymous");
+        formData.append("email", userEmail || "");
 
         try {
             const res = await fetch(API_ENDPOINTS.analyze, {
@@ -130,7 +134,8 @@ const DocumentVault = () => {
         );
     }
 
-    const isLimitReached = effectiveStatus && !effectiveStatus.is_premium && effectiveStatus.document_count >= effectiveStatus.limit;
+    const isAdmin = userEmail === 'vikastro911@gmail.com';
+    const isLimitReached = !isAdmin && effectiveStatus && !effectiveStatus.is_premium && effectiveStatus.document_count >= effectiveStatus.limit;
 
     return (
         <div className="bg-slate-900 min-h-screen p-8">
@@ -164,12 +169,19 @@ const DocumentVault = () => {
                             </div>
                         )}
 
-                        {effectiveStatus?.is_premium && (
+                        {(isAdmin || effectiveStatus?.is_premium) && (
                             <div className="flex items-center gap-3">
-                                <div className="bg-blue-900/30 px-4 py-2 rounded-lg border border-blue-500/30">
-                                    <span className="text-blue-200 font-semibold">✨ Premium Plan</span>
-                                </div>
-                                {effectiveStatus.premium_expires_at && (
+                                {isAdmin ? (
+                                    <div className="bg-purple-900/30 px-4 py-2 rounded-lg border border-purple-500/30 flex items-center gap-2">
+                                        <span className="text-purple-200 font-bold">🛡️ Admin Access</span>
+                                    </div>
+                                ) : (
+                                    <div className="bg-blue-900/30 px-4 py-2 rounded-lg border border-blue-500/30">
+                                        <span className="text-blue-200 font-semibold">✨ Premium Plan</span>
+                                    </div>
+                                )}
+
+                                {!isAdmin && effectiveStatus?.premium_expires_at && (
                                     <CountdownTimer targetDate={effectiveStatus.premium_expires_at} />
                                 )}
                             </div>

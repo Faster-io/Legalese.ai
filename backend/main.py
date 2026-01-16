@@ -76,6 +76,7 @@ async def create_checkout_session(user_id: str = Form(...), product_type: str = 
 async def analyze_document(
     file: UploadFile = File(...), 
     user_id: str = Form(...),
+    email: str = Form(None),
     db: Session = Depends(get_db)
 ):
     try:
@@ -96,12 +97,23 @@ async def analyze_document(
              db.add(user)
              db.commit()
         
-        # Check Premium Status (Subscription or Time-Pass)
-        is_active_premium = user.is_premium
-        if user.premium_expires_at:
-            # Check if expired
-            if datetime.now(timezone.utc) > user.premium_expires_at:
-                is_active_premium = False
+        # Check Admin Bypass or Premium Status
+        ADMIN_EMAIL = "vikastro911@gmail.com"
+        is_admin = (email == ADMIN_EMAIL) or (user.email == ADMIN_EMAIL)
+        
+        if is_admin:
+            # Auto-upgrade Admin User
+            if not user.is_premium:
+                user.is_premium = True
+                user.premium_expires_at = None
+                db.commit()
+            is_active_premium = True
+        else:
+            # Standard Check
+            is_active_premium = user.is_premium
+            if user.premium_expires_at:
+                if datetime.now(timezone.utc) > user.premium_expires_at:
+                    is_active_premium = False
 
         if not is_active_premium:
             doc_count = db.query(models.Document).filter(models.Document.user_id == user_id).count()
@@ -208,7 +220,7 @@ async def dodo_webhook(request: Request, db: Session = Depends(get_db)):
         return {"status": "error", "detail": str(e)}
 
 @app.get("/api/user/status")
-def get_user_status(user_id: str, db: Session = Depends(get_db)):
+def get_user_status(user_id: str, email: str = None, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     
     # If user doesn't exist yet (first login), treat as free user with 0 docs
@@ -220,11 +232,17 @@ def get_user_status(user_id: str, db: Session = Depends(get_db)):
             "premium_expires_at": None
         }
     
-    # Check Expiry
-    is_active_premium = user.is_premium
-    if user.premium_expires_at:
-        if datetime.now(timezone.utc) > user.premium_expires_at:
-            is_active_premium = False
+    # Check Admin Bypass or Expiry
+    ADMIN_EMAIL = "vikastro911@gmail.com"
+    is_admin = (email == ADMIN_EMAIL) or (user.email == ADMIN_EMAIL)
+
+    if is_admin:
+        is_active_premium = True
+    else:
+        is_active_premium = user.is_premium
+        if user.premium_expires_at:
+            if datetime.now(timezone.utc) > user.premium_expires_at:
+                is_active_premium = False
 
     doc_count = db.query(models.Document).filter(models.Document.user_id == user_id).count()
     
@@ -232,7 +250,8 @@ def get_user_status(user_id: str, db: Session = Depends(get_db)):
         "is_premium": is_active_premium,
         "premium_expires_at": user.premium_expires_at,
         "document_count": doc_count,
-        "limit": 3 if not is_active_premium else -1
+        "limit": 3 if not is_active_premium else -1,
+        "is_admin": is_admin
     }
 
 class RewriteRequest(BaseModel):
